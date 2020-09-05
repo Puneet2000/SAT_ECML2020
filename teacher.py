@@ -36,7 +36,8 @@ def train(trainloader, model, optimization, start_epoch, stop_epoch, params,conf
         print_freq = 50
         avg_loss=0
         correct ,total =0,0
-        for i, (x,y,_) in enumerate(trainloader):
+        # for i, (x,y) in enumerate(trainloader): Use when using tiny-imagenet or flower dataset
+        for i, (x,y) in enumerate(trainloader):
             x,y = x.cuda(), y.cuda()
             a = time.time()
             if params.method =='adv':
@@ -55,7 +56,7 @@ def train(trainloader, model, optimization, start_epoch, stop_epoch, params,conf
 
             if i % print_freq==0:
                 print('Epoch {:d} | Batch {:d}/{:d} | Loss {:f} | Train Acc {:f}'.format(epoch, i, len(trainloader), avg_loss/float(i+1),100.*correct/total ))
-                print(t)
+                # print(t)
         if not os.path.isdir(params.checkpoint_dir):
             os.makedirs(params.checkpoint_dir)
 
@@ -75,7 +76,7 @@ def test(testloader, model,params,config):
     correct ,total =0,0
     for i, (x,y) in enumerate(testloader):
         x,y = x.cuda(), y.cuda()
-        # print(y)
+        # Remove comment for adversarial accuracy
         #x = pgd.attack(model,x,y)
         scores,_ = model.forward(x)
         predicted = torch.argmax(scores,1)

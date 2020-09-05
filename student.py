@@ -48,7 +48,7 @@ def train(trainloader, model, teacher,optimization, start_epoch, stop_epoch, par
         avg_mloss=0
         correct ,total =0,0
         p = 1. - np.power(params.a,epoch/10.0)
-        for i, (x,y,_) in enumerate(trainloader):
+        for i, (x,y) in enumerate(trainloader):
             x,y = x.cuda(), y.cuda()
 
             target_mask = []
@@ -176,10 +176,10 @@ if __name__=='__main__':
             transforms.ToTensor(),
         ])
 
-        trainset = torchvision.datasets.CIFAR10(root='./../root_cifar', train=True, download=True, transform=transform_train)
+        trainset = torchvision.datasets.CIFAR10(root='./../../root_cifar', train=True, download=True, transform=transform_train)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=params.bs, shuffle=True, num_workers=12)
 
-        testset = torchvision.datasets.CIFAR10(root='./../root_cifar', train=False, download=True, transform=transform_test)
+        testset = torchvision.datasets.CIFAR10(root='./../../root_cifar', train=False, download=True, transform=transform_test)
         testloader = torch.utils.data.DataLoader(testset, batch_size=params.bs, shuffle=False, num_workers=12)
         config = {
             'epsilon': 8.0 / 255,
