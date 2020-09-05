@@ -42,7 +42,7 @@ def train(trainloader, model, teacher,optimization, start_epoch, stop_epoch, par
             x,y = x.cuda(), y.cuda()
 
             target_mask = target_mask
-            # a = time.time()
+            a = time.time()
             noise = torch.sign(torch.FloatTensor(x.size()).uniform_(-1,1))
             prob = torch.Tensor(x.size()).fill_(p)
             m = torch.distributions.bernoulli.Bernoulli(prob)
@@ -69,9 +69,9 @@ def train(trainloader, model, teacher,optimization, start_epoch, stop_epoch, par
             optimizer.zero_grad()
             closs.backward()
             optimizer.step()
-            # b = time.time()
+            b = time.time()
             avg_closs += closs.data.item()
-            # t += float(b-a)
+            t += float(b-a)
             if i % print_freq==0:
                 print('Epoch {:d} | Batch {:d}/{:d} | CLoss {:f}  | Train Acc {:f}'.format(epoch, i, len(trainloader), avg_closs/float(i+1),100.*correct/total))
                 print(t)

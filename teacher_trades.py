@@ -20,7 +20,7 @@ import torchvision.models as models
 import torch.nn.functional as F
 warnings.filterwarnings("ignore")
 
-SAVE_DIR = '/DATA1/puneet/interpretable/checkpoints'
+SAVE_DIR = '/DATA1/puneet/adversarial/manifold'
 
 def train(trainloader, model, optimization, start_epoch, stop_epoch, params,config):    
     if optimization == 'Adam':
@@ -36,7 +36,7 @@ def train(trainloader, model, optimization, start_epoch, stop_epoch, params,conf
         print_freq = 50
         avg_loss=0
         correct ,total =0,0
-        for i, (x,y) in enumerate(trainloader):
+        for i, (x,y,_) in enumerate(trainloader):
             
             a = time.time()
             x,y = x.cuda(), y.cuda()
@@ -46,7 +46,7 @@ def train(trainloader, model, optimization, start_epoch, stop_epoch, params,conf
             predicted = torch.argmax(scores,1)
             correct += (predicted==y).sum().item()
             total += predicted.size(0)
-            loss = loss_fn(scores,y) + (1.0 / x.size(0)) * criterion_kl(F.log_softmax(model(x_adv)[0], dim=1),F.softmax(model(x)[0], dim=1))
+            loss = loss_fn(scores,y) + (6.0 / x.size(0)) * criterion_kl(F.log_softmax(model(x_adv)[0], dim=1),F.softmax(model(x)[0], dim=1))
             loss.backward()
             optimizer.step()
             b = time.time()
@@ -103,10 +103,10 @@ if __name__=='__main__':
             # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
 
-        trainset = torchvision.datasets.CIFAR10(root='./../root_cifar', train=True, download=True, transform=transform_train)
+        trainset = torchvision.datasets.CIFAR10(root='./../../root_cifar', train=True, download=True, transform=transform_train)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=params.bs, shuffle=True, num_workers=12)
 
-        testset = torchvision.datasets.CIFAR10(root='./../root_cifar', train=False, download=True, transform=transform_test)
+        testset = torchvision.datasets.CIFAR10(root='./../../root_cifar', train=False, download=True, transform=transform_test)
         testloader = torch.utils.data.DataLoader(testset, batch_size=params.bs, shuffle=True, num_workers=12)
         config = {
             'epsilon': 4.0 / 255,
@@ -130,14 +130,14 @@ if __name__=='__main__':
             # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
 
-        trainset = torchvision.datasets.CIFAR100(root='./../root_cifar100', train=True, download=True, transform=transform_train)
+        trainset = torchvision.datasets.CIFAR100(root='./../../root_cifar100', train=True, download=True, transform=transform_train)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=params.bs, shuffle=True, num_workers=12)
 
-        testset = torchvision.datasets.CIFAR100(root='./../root_cifar100', train=False, download=True, transform=transform_test)
+        testset = torchvision.datasets.CIFAR100(root='./../../root_cifar100', train=False, download=True, transform=transform_test)
         testloader = torch.utils.data.DataLoader(testset, batch_size=params.bs, shuffle=True, num_workers=12)
         config = {
-            'epsilon': 4.0 / 255,
-            'num_steps': 5,
+            'epsilon': 8.0 / 255,
+            'num_steps': 10,
             'step_size': 2.0 / 255,
             'random_start': True,
             'loss_func': 'xent',
@@ -157,14 +157,14 @@ if __name__=='__main__':
             # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
 
-        trainset = torchvision.datasets.SVHN(root='./../root_shvn', split='train', download=True,transform=transform_train)
+        trainset = torchvision.datasets.SVHN(root='./../../root_shvn', split='train', download=True,transform=transform_train)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=params.bs, shuffle=True, num_workers=2)
 
-        testset = torchvision.datasets.SVHN(root='./../root_shvn', split='test',  download=True,transform=transform_test)
+        testset = torchvision.datasets.SVHN(root='./../../root_shvn', split='test',  download=True,transform=transform_test)
         testloader = torch.utils.data.DataLoader(testset, batch_size=params.bs, shuffle=False, num_workers=2)
         config = {
             'epsilon': 8.0 / 255,
-            'num_steps': 5,
+            'num_steps': 10,
             'step_size': 2.0 / 255,
             'random_start': True,
             'loss_func': 'xent',
@@ -186,12 +186,42 @@ if __name__=='__main__':
         ])
 
         # trainset = torchvision.datasets.ImageFolder('/DATA1/puneet/tiny-imagenet-200/train', transform_train)
-        trainset = TinyImageNet('/DATA1/puneet/tiny-imagenet-200', 'train', transform=transform_train)
+        trainset = TinyImageNet('/DATA1/tiny-imagenet-200', 'train', transform=transform_train)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=params.bs, shuffle=True, num_workers=2)
 
         # testset = torchvision.datasets.ImageFolder('/DATA1/puneet/tiny-imagenet-200/val', transform_test)
-        testset = TinyImageNet('/DATA1/puneet/tiny-imagenet-200', 'train',transform=transform_test)
+        testset = TinyImageNet('/DATA1/tiny-imagenet-200', 'val',transform=transform_test)
         testloader = torch.utils.data.DataLoader(testset, batch_size=params.bs, shuffle=False, num_workers=2)
+        config = {
+            'epsilon': 8.0 / 255,
+            'num_steps': 5,
+            'step_size': 2.0 / 255,
+            'random_start': True,
+            'loss_func': 'xent',
+        }
+
+    elif params.dataset == 'flower':
+        params.num_classes = 17
+        transform_train = transforms.Compose([
+            transforms.Resize(32),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ])
+
+        transform_test = transforms.Compose([
+            transforms.Resize(32),
+            transforms.ToTensor(),
+            # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        ])
+
+        # trainset = torchvision.datasets.ImageFolder('/DATA1/puneet/tiny-imagenet-200/train', transform_train)
+        trainset = Flower('/home/puneet/interpretable/saliency2/dataset/17flowers', 'train', transform=transform_train)
+        trainloader = torch.utils.data.DataLoader(trainset, batch_size=params.bs, shuffle=True, num_workers=12)
+
+        # testset = torchvision.datasets.ImageFolder('/DATA1/puneet/tiny-imagenet-200/val', transform_test)
+        testset = Flower('/home/puneet/interpretable/saliency2/dataset/17flowers', 'val',transform=transform_test)
+        testloader = torch.utils.data.DataLoader(testset, batch_size=params.bs, shuffle=False, num_workers=12)
         config = {
             'epsilon': 8.0 / 255,
             'num_steps': 5,
@@ -204,7 +234,7 @@ if __name__=='__main__':
     model = model.Model(net=params.model,num_classes= params.num_classes)
     # model = nn.DataParallel(model,device_ids=[0,1])
     optimization = 'Adam'
-    params.checkpoint_dir = '%s/%s/teacher/%s_%s' %( SAVE_DIR,params.dataset, params.model, 'trades')
+    params.checkpoint_dir = '%s/%s/transformers/%s_%s' %( SAVE_DIR,params.dataset, params.model, 'trades')
     print('checkpoints dir',params.checkpoint_dir)
     if not os.path.isdir(params.checkpoint_dir):
         os.makedirs(params.checkpoint_dir)

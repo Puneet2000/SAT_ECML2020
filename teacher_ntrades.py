@@ -76,7 +76,7 @@ def test(testloader, model,params,config):
     for i, (x,y) in enumerate(testloader):
         x,y = x.cuda(), y.cuda()
         # print(y)
-        x = pgd.attack(model,x,y)
+        # x = pgd.attack(model,x,y)
         scores,_ = model.forward(x)
         predicted = torch.argmax(scores,1)
         correct += (predicted==y).sum().item()
@@ -193,8 +193,8 @@ if __name__=='__main__':
         testset = TinyImageNet('/DATA1/tiny-imagenet-200', 'val',transform=transform_test)
         testloader = torch.utils.data.DataLoader(testset, batch_size=params.bs, shuffle=False, num_workers=2)
         config = {
-            'epsilon': 3.0 / 255,
-            'num_steps': 5,
+            'epsilon': 8.0 / 255,
+            'num_steps': 10,
             'step_size': 2.0 / 255,
             'random_start': True,
             'loss_func': 'xent',

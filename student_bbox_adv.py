@@ -20,6 +20,7 @@ from gradcam import *
 from TinyImagenet import *
 import distortions
 import time
+# import advertorch
 warnings.filterwarnings("ignore")
 
 SAVE_DIR = '/DATA1/puneet/interpretable/checkpoints'
@@ -126,6 +127,24 @@ def test_adv(testloader, model,params,config):
             correct += (predicted==y).sum().item()
             total += predicted.size(0)
             print('Accuracy {:f}'.format(100.*correct/total))
+
+def test_CW2(testloader, model,params,config): 
+    model.eval()
+    loss_fn = nn.CrossEntropyLoss()
+    def predict(model,x):
+        return model(x)[0]
+
+    attacker = advertorch.attacks.CarliniWagnerL2Attack(lambda x: predict(model,x),params.num_classes,loss_fn=loss_fn,binary_search_steps=5, max_iterations=20)
+    correct = 0
+    total = 0
+    for i, (x,y) in enumerate(testloader):
+        x,y = x.cuda(), y.cuda()
+        x = attacker.perturb(x,y)
+        scores,_ = model(x)
+        predicted = torch.argmax(scores,1)
+        correct += (predicted==y).sum().item()
+        total += predicted.size(0)
+        print('Accuracy {:f}'.format(100.*correct/total))
 
 if __name__=='__main__':
     np.random.seed(10)
@@ -303,6 +322,6 @@ if __name__=='__main__':
     if params.test is None:
         model = train(trainloader, model, None, optimization, start_epoch, stop_epoch, params,config)
     elif params.test == 'adv':
-        test_adv(testloader,model,params,config)
+        test_CW2(testloader,model,params,config)
     else:
         test_distortion(testloader,model,params)

@@ -20,6 +20,7 @@ from gradcam import *
 from TinyImagenet import *
 import distortions
 import time
+import advertorch
 warnings.filterwarnings("ignore")
 
 SAVE_DIR = '/DATA1/puneet/interpretable/checkpoints'
@@ -138,6 +139,24 @@ def test_adv(testloader, model,params,config):
             total += predicted.size(0)
             print('Accuracy {:f}'.format(100.*correct/total))
 
+def test_CW2(testloader, model,params,config): 
+    model.eval()
+    loss_fn = nn.CrossEntropyLoss()
+    def predict(model,x):
+        return model(x)[0]
+
+    attacker = advertorch.attacks.CarliniWagnerL2Attack(lambda x: predict(model,x),params.num_classes,loss_fn=loss_fn,binary_search_steps=9, max_iterations=20)
+    correct = 0
+    total = 0
+    for i, (x,y) in enumerate(testloader):
+        x,y = x.cuda(), y.cuda()
+        x = attacker.perturb(x,y)
+        scores,_ = model(x)
+        predicted = torch.argmax(scores,1)
+        correct += (predicted==y).sum().item()
+        total += predicted.size(0)
+        print('Accuracy {:f}'.format(100.*correct/total))
+
 if __name__=='__main__':
     np.random.seed(10)
     params = parse_args()
@@ -155,10 +174,10 @@ if __name__=='__main__':
             transforms.ToTensor(),
         ])
 
-        trainset = torchvision.datasets.CIFAR10(root='./../root_cifar', train=True, download=True, transform=transform_train)
+        trainset = torchvision.datasets.CIFAR10(root='./../../root_cifar', train=True, download=True, transform=transform_train)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=params.bs, shuffle=True, num_workers=12)
 
-        testset = torchvision.datasets.CIFAR10(root='./../root_cifar', train=False, download=True, transform=transform_test)
+        testset = torchvision.datasets.CIFAR10(root='./../../root_cifar', train=False, download=True, transform=transform_test)
         testloader = torch.utils.data.DataLoader(testset, batch_size=params.bs, shuffle=False, num_workers=12)
         config = {
             'epsilon': 8.0 / 255,
@@ -181,10 +200,10 @@ if __name__=='__main__':
             # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
 
-        trainset = torchvision.datasets.CIFAR100(root='./../root_cifar100', train=True, download=True, transform=transform_train)
+        trainset = torchvision.datasets.CIFAR100(root='./../../root_cifar100', train=True, download=True, transform=transform_train)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=params.bs, shuffle=True, num_workers=12)
 
-        testset = torchvision.datasets.CIFAR100(root='./../root_cifar100', train=False, download=True, transform=transform_test)
+        testset = torchvision.datasets.CIFAR100(root='./../../root_cifar100', train=False, download=True, transform=transform_test)
         testloader = torch.utils.data.DataLoader(testset, batch_size=params.bs, shuffle=True, num_workers=12)
         config = {
             'epsilon': 4.0 / 255,
@@ -237,11 +256,11 @@ if __name__=='__main__':
         ])
 
         # trainset = torchvision.datasets.ImageFolder('/DATA1/puneet/tiny-imagenet-200/train', transform_train)
-        trainset = TinyImageNet('/DATA1/puneet/tiny-imagenet-200', 'train', transform=transform_train)
+        trainset = TinyImageNet('/DATA1/tiny-imagenet-200', 'train', transform=transform_train)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=params.bs, shuffle=True, num_workers=2)
 
         # testset = torchvision.datasets.ImageFolder('/DATA1/puneet/tiny-imagenet-200/val', transform_test)
-        testset = TinyImageNet('/DATA1/puneet/tiny-imagenet-200', 'train',transform=transform_test)
+        testset = TinyImageNet('/DATA1/tiny-imagenet-200', 'val',transform=transform_test)
         testloader = torch.utils.data.DataLoader(testset, batch_size=params.bs, shuffle=False, num_workers=2)
         config = {
             'epsilon': 8.0 / 255,
@@ -296,6 +315,6 @@ if __name__=='__main__':
     if params.test is None:
         model = train(trainloader, model, teacher, optimization, start_epoch, stop_epoch, params,config)
     elif params.test == 'adv':
-        test_adv(testloader,model,params,config)
+        test_CW2(testloader,model,params,config)
     else:
         test_distortion(testloader,model,params)
